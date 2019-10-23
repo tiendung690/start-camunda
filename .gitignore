@@ -2,3 +2,8 @@
 target/
 *.iml
 backend/src/main/resources/static/*
+!backend/src/main/resources/static/versions.yaml
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

@@ -16,35 +16,46 @@
  */
 package com.camunda.start.rest;
 
-import com.camunda.start.processing.ProjectGenerator;
-import com.camunda.start.rest.dto.DownloadProjectDto;
+import org.apache.commons.io.IOUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+
 @CrossOrigin("*")
 @RestController
-public class GeneratingController {
+public class VersionFetchController {
 
   @ExceptionHandler({ BadUserRequestException.class })
-  @PostMapping(value = "/download")
-  public @ResponseBody byte[] downloadProject(@RequestBody DownloadProjectDto dto) {
+  @GetMapping(value = "/fetch-versions")
+  public @ResponseBody String fetchVersions() {
+    URL url = null;
+    try {
+      url = new URL("https://search.maven.org/remotecontent?filepath=org/camunda/bpm" +
+          "/springboot/project/camunda-bpm-spring-boot-starter-root/3.4.0-alpha1/camunda-bpm-spring-boot-starter-root-3.4.0-alpha1.pom");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    }
 
-    ProjectGenerator projectGenerator = new ProjectGenerator(dto);
-    return projectGenerator.generate();
-  }
+    URLConnection urlConnection = null;
+    try {
+      urlConnection = url.openConnection();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
-  @ExceptionHandler({ BadUserRequestException.class })
-  @PostMapping(value = "/show/{fileName}")
-  public @ResponseBody String showFile(@RequestBody DownloadProjectDto dto,
-                                       @PathVariable String fileName) {
-
-    ProjectGenerator projectGenerator = new ProjectGenerator(dto);
-    return projectGenerator.generate(fileName);
+    try {
+      return IOUtils.toString(urlConnection.getInputStream(), Charset.defaultCharset());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }

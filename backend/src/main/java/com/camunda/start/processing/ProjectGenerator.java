@@ -17,11 +17,13 @@
 package com.camunda.start.processing;
 
 import com.camunda.start.rest.dto.DownloadProjectDto;
+import org.yaml.snakeyaml.Yaml;
 import org.zeroturnaround.zip.ByteSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +46,16 @@ public class ProjectGenerator {
   protected TemplateProcessor templateProcessor;
   protected Map<String, Object> context;
 
+  protected Map<String, Map<String, String>> versions;
+
   public ProjectGenerator(DownloadProjectDto dto) {
+    Yaml yaml = new Yaml();
+    InputStream inputStream = this.getClass()
+        .getClassLoader()
+        .getResourceAsStream("static/versions.yaml");
+
+    versions = yaml.load(inputStream);
+
     this.dto = dto;
     initDto(dto);
     this.context = new HashMap<>();
@@ -65,8 +76,8 @@ public class ProjectGenerator {
     if (isEmpty(dto.getArtifact())) {
       dto.setArtifact("my-project");
     }
-    if (isEmpty(dto.getCamundaVersion())) {
-      dto.setCamundaVersion("7.12.0-SNAPSHOT");
+    if (isEmpty(dto.getStarterVersion())) {
+      dto.setStarterVersion("3.4.0-SNAPSHOT");
     }
     if (isEmpty(dto.getJavaVersion())) {
       dto.setJavaVersion("12");
@@ -79,9 +90,6 @@ public class ProjectGenerator {
     }
     if (isEmpty(dto.getVersion())) {
       dto.setVersion("1.0.0-SNAPSHOT");
-    }
-    if (isEmpty(dto.getSpringBootVersion())) {
-      dto.setSpringBootVersion("2.1.6.RELEASE");
     }
   }
 
@@ -132,8 +140,8 @@ public class ProjectGenerator {
     context.put("adminUsername", dto.getUsername());
     context.put("adminPassword", dto.getPassword());
 
-    context.put("camundaVersion", dto.getCamundaVersion());
-    context.put("springBootVersion", dto.getSpringBootVersion());
+    context.put("camundaVersion", resolveCamundaVersion(dto.getStarterVersion()));
+    context.put("springBootVersion", resolveSpringBootVersion(dto.getStarterVersion()));
     context.put("javaVersion", dto.getJavaVersion());
 
     context.put("group", dto.getGroup());
@@ -141,6 +149,16 @@ public class ProjectGenerator {
     context.put("projectVersion", dto.getVersion());
 
     context.put("dependencies", getDeps(dto.getModules()));
+  }
+
+  protected String resolveSpringBootVersion(String starterVersion) {
+    return versions.get(starterVersion)
+        .get("springBootVersion");
+  }
+
+  protected String resolveCamundaVersion(String starterVersion) {
+    return versions.get(starterVersion)
+        .get("camundaVersion");
   }
 
   protected List<Dependency> getDeps(List<String> modules) {
@@ -153,7 +171,7 @@ public class ProjectGenerator {
           Dependency camundaWebapps = new Dependency()
               .setGroup("org.camunda.bpm.springboot")
               .setArtifact("camunda-bpm-spring-boot-starter-webapp")
-              .setVersion(getVersion(dto.getCamundaVersion()));
+              .setVersion(dto.getStarterVersion());
 
           dependencies.add(camundaWebapps);
           break;
@@ -162,7 +180,7 @@ public class ProjectGenerator {
           Dependency camundaRest = new Dependency()
               .setGroup("org.camunda.bpm.springboot")
               .setArtifact("camunda-bpm-spring-boot-starter-rest")
-              .setVersion(getVersion(dto.getCamundaVersion()));
+              .setVersion(dto.getStarterVersion());
 
           dependencies.add(camundaRest);
           break;
@@ -216,20 +234,6 @@ public class ProjectGenerator {
     }
 
     dependencies.add(jdbcDependency);
-  }
-
-  protected String getVersion(String camundaVersion) {
-    switch (camundaVersion) {
-      case "7.9.0":
-        return "3.0.3";
-      case "7.10.0":
-        return "3.2.5";
-      case "7.11.0":
-        return "3.3.3";
-      case "7.12.0-SNAPSHOT":
-        return "3.4.0-SNAPSHOT";
-    }
-    return null;
   }
 
   protected String getDbClassRef(String database) {

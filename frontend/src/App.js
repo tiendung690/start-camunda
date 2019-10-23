@@ -27,6 +27,8 @@ import Divider from '@material-ui/core/Divider';
 import Box from '@material-ui/core/Box';
 import Link from '@material-ui/core/Link';
 
+var yaml = require('js-yaml');
+
 function App() {
 
   const [artifact, setArtifact] = useState('my-project'),
@@ -35,7 +37,7 @@ function App() {
         [password, setPassword] = useState(),
         [database, setDatabase] = useState(),
         [version, setVersion] = useState(),
-        [camundaVersion, setCamundaVersion] = useState(),
+        [starterVersion, setStarterVersion] = useState(),
         [springBootVersion, setSpringBootVersion] = useState(''),
         [javaVersion, setJavaVersion] = useState(),
         [modules, setModules] = useState({
@@ -50,7 +52,7 @@ function App() {
       return modules[name];
     });
 
-    fetch('./download', {
+    fetch('http://localhost:9090/download', {
       method: 'post',
       headers: {
         "Content-Type": 'application/json'
@@ -62,8 +64,7 @@ function App() {
         "password": password,
         "database": database,
         "version": version,
-        "camundaVersion": camundaVersion,
-        "springBootVersion": springBootVersion,
+        "starterVersion": starterVersion,
         "javaVersion": javaVersion,
         "modules": moduleNames
       })
@@ -89,25 +90,18 @@ function App() {
     setOpen(false);
   }
 
-  function changeCamundaVersion(version) {
-    switch (version) {
-      case '7.9.0':
-        setSpringBootVersion('2.0.9.RELEASE');
-        break;
-      case '7.10.0':
-        setSpringBootVersion('2.1.6.RELEASE');
-        break;
-      case '7.11.0':
-        setSpringBootVersion('2.1.6.RELEASE');
-        break;
-      case '7.12.0-SNAPSHOT':
-        setSpringBootVersion('2.1.6.RELEASE');
-        break;
-      default:
-        throw new Error("Not existing Camunda Version!");
-    }
+  function changeStarterVersion(version) {
+    fetch('http://localhost:9090/versions.yaml').then(response => {
+      console.log(response);
+      if (response.status === 200) {
+        response.text().then(text => {
+          setSpringBootVersion(yaml.safeLoad(text)[version].springBootVersion);
+          console.log(text);
+        });
+      }
+    });
 
-    setCamundaVersion(version);
+    setStarterVersion(version);
   }
 
   function changeModules(module) {
@@ -153,7 +147,7 @@ function App() {
       return modules[name];
     });
 
-    fetch('./show/' + filename, {
+    fetch('http://localhost:9090/show/' + filename, {
       method: 'post',
       headers: {
         "Content-Type": 'application/json'
@@ -165,8 +159,7 @@ function App() {
         "password": password,
         "database": database,
         "version": version,
-        "camundaVersion": camundaVersion,
-        "springBootVersion": springBootVersion,
+        "starterVersion": starterVersion,
         "javaVersion": javaVersion,
         "modules": moduleNames
       })
@@ -254,12 +247,12 @@ function App() {
                          fullWidth
                          required>
               <InputLabel htmlFor="camunda-version">Camunda BPM Version</InputLabel>
-              <Select value={camundaVersion}
-                      onChange={e => changeCamundaVersion(e.target.value)}>
-                <MenuItem value="7.9.0">7.9.0</MenuItem>
-                <MenuItem value="7.10.0">7.10.0</MenuItem>
-                <MenuItem value="7.11.0">7.11.0 (current)</MenuItem>
-                <MenuItem value="7.12.0-SNAPSHOT">SNAPSHOT</MenuItem>
+              <Select value={starterVersion}
+                      onChange={e => changeStarterVersion(e.target.value)}>
+                <MenuItem value="3.0.0">7.9.0</MenuItem>
+                <MenuItem value="3.2.1">7.10.0</MenuItem>
+                <MenuItem value="3.3.1">7.11.0 (current)</MenuItem>
+                <MenuItem value="3.4.0-SNAPSHOT">SNAPSHOT</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -271,8 +264,7 @@ function App() {
               label="Spring Boot Version"
               fullWidth
               disabled
-              value={springBootVersion}
-              onInput={e => setSpringBootVersion(e.target.value)} />
+              value={springBootVersion} />
           </Grid>
           <Grid item
                 xs={12}

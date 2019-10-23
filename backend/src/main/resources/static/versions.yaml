@@ -1,0 +1,12 @@
+3.0.0:
+  camundaVersion: 7.9.0
+  springBootVersion: 2.0.6.RELEASE
+3.2.1:
+  camundaVersion: 7.10.0
+  springBootVersion: 2.1.6.RELEASE
+3.3.1:
+  camundaVersion: 7.11.0
+  springBootVersion: 2.1.6.RELEASE
+3.4.0-SNAPSHOT:
+  camundaVersion: 7.12.0-SNAPSHOT
+  springBootVersion: 2.2.6.RELEASE
