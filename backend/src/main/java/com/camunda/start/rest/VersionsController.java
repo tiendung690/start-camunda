@@ -16,35 +16,54 @@
  */
 package com.camunda.start.rest;
 
-import com.camunda.start.processing.ProjectGenerator;
-import com.camunda.start.rest.dto.DownloadProjectDto;
+import com.camunda.start.update.VersionUpdater;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @RestController
-public class GeneratingController {
+public class VersionsController {
 
   @Autowired
-  protected ProjectGenerator projectGenerator;
+  protected VersionUpdater versionUpdater;
 
-  @ExceptionHandler({ BadUserRequestException.class })
-  @PostMapping(value = "/download")
-  public @ResponseBody byte[] downloadProject(@RequestBody DownloadProjectDto inputData) {
+  @GetMapping(value = "/versions.json")
+  public @ResponseBody String getVersions() {
+    String versionsAsJson = null;
 
-    return projectGenerator.generate(inputData);
+    Path path = Paths.get("versions.json");
+    try {
+      versionsAsJson = readVersions(path);
+
+    } catch (NoSuchFileException e) {
+      versionUpdater.updateVersions();
+
+      try {
+        versionsAsJson = readVersions(path);
+
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+
+      }
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+
+    }
+
+    return versionsAsJson;
   }
 
-  @ExceptionHandler({ BadUserRequestException.class })
-  @PostMapping(value = "/show/{fileName}")
-  public @ResponseBody String showFile(@RequestBody DownloadProjectDto inputData,
-                                       @PathVariable String fileName) {
-
-    return projectGenerator.generate(inputData, fileName);
+  protected String readVersions(Path path) throws IOException {
+    return new String(Files.readAllBytes(path), Charset.defaultCharset());
   }
 
 }
